@@ -13,7 +13,7 @@
   G.state = 'idle';      // idle | aim | sim | ai | over
   G.side = 'black';
   G.moveNo = 0;
-  G.stats = { black: { kills: 0, lost: 0, civ: 0 }, white: { kills: 0, lost: 0, civ: 0 } };
+  G.stats = { black: { kills: 0, lost: 0, civ: 0, gained: 0 }, white: { kills: 0, lost: 0, civ: 0, gained: 0 } };
   G.fx = { hits: [], falls: [] };
   G.acc = 0;
   G.simT = 0;
@@ -227,7 +227,7 @@
     return fx;
   }
 
-  /** 平民被某方棋子撞到 → 加入该方 */
+  /** 平民被撞到 → 加入指定的阵营（生化模式里恒为"当前行动方"） */
   function applyConvert(civ, side) {
     if (!civ || !civ.alive || civ.falling) return false;
     if (civ.kind !== 'civilian') return false;
@@ -235,15 +235,18 @@
     civ.side = side;
     civ.convertAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     if (G.flips) G.flips[side]++;
+    if (G.stats && G.stats[side]) G.stats[side].gained = (G.stats[side].gained || 0) + 1;
     return true;
   }
 
   G.applyConverts = function () {
     const list = G.fx && G.fx.converts;
     if (!list || !list.length) return;
+    // 谁在行动，被碰到的平民就归谁（"感染"只形容传播特性，一定是己方子力）
+    const owner = G.side;
     let n = 0;
     for (let i = 0; i < list.length; i++) {
-      if (applyConvert(list[i].p, list[i].side)) n++;
+      if (applyConvert(list[i].p, owner)) n++;
     }
     list.length = 0;
     if (n && G.onSound) G.onSound('hit', { soft: true });
@@ -297,7 +300,7 @@
     }
 
     G.levelName = level ? (level.name || '自定义关卡') : null;
-    G.stats = { black: { kills: 0, lost: 0, civ: 0 }, white: { kills: 0, lost: 0, civ: 0 } };
+    G.stats = { black: { kills: 0, lost: 0, civ: 0, gained: 0 }, white: { kills: 0, lost: 0, civ: 0, gained: 0 } };
     G.moveNo = 0;
     G.side = 'black';
     G.result = null;
@@ -562,10 +565,7 @@
     const bio = G.cfg.rules === 'bio';
     if (bio && G.flips) {
       if (G.flips[shooter] && G.onLog) {
-        G.onLog({ type: 'convert', text: `${SIDE_CN[shooter]}同化 ${G.flips[shooter]} 个平民` });
-      }
-      if (G.flips[opp] && G.onLog) {
-        G.onLog({ type: 'convert', text: `${SIDE_CN[opp]}的棋子碰到平民，${G.flips[opp]} 个平民倒向对方` });
+        G.onLog({ type: 'convert', text: `${SIDE_CN[shooter]}同化 ${G.flips[shooter]} 个平民，转为己方子力` });
       }
     }
     G.fx = newFx();

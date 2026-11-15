@@ -371,11 +371,15 @@
     if (!G.cfg) return;
     const P = GG.Physics;
     const total = G.cfg.troops;
+    // 生化模式下分母跟着"获得"增长：3/3 → 每感染 1 个变 4/4
+    const bioOn = G.cfg.rules === 'bio';
+    const bTotal = total + (bioOn ? (G.stats.black.gained || 0) : 0);
+    const wTotal = total + (bioOn ? (G.stats.white.gained || 0) : 0);
     const bLeft = G.leftOf('black');
     const wLeft = G.leftOf('white');
-    el.p1Stat.textContent = `${bLeft} / ${total}`;
-    el.p2Stat.textContent = `${wLeft} / ${total}`;
-    if (G.cfg.rules === 'bio') {
+    el.p1Stat.textContent = `${bLeft} / ${bTotal}`;
+    el.p2Stat.textContent = `${wLeft} / ${wTotal}`;
+    if (bioOn) {
       updateCivCount(el.p1Civ, P.count(G.pieces, 'black', 'civilian'));
       updateCivCount(el.p2Civ, P.count(G.pieces, 'white', 'civilian'));
     } else {

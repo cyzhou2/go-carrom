@@ -334,8 +334,9 @@ async function main() {
       ok(fx.converts.length > 0, '棋子接触平民会产生同化事件');
       G.fx = fx;
       G.applyConverts();
-      ok(civ.side === 'white', '平民被白方棋子碰到 → 归入白方');
-      ok(G.civOf('white') >= 1, 'civOf 统计到已收编平民');
+      // 谁在行动就归谁：这回合是黑方，被白方棋子碰到的平民也归黑方
+      ok(G.side === 'black' && civ.side === 'black', '被碰到的平民一律归当前行动方');
+      ok(G.civOf('black') >= 1 && G.civOf('white') === 0, 'civOf 统计到当前行动方的平民');
     }
 
     // 撞飞 3 个平民：生化模式无任何惩罚
