@@ -156,6 +156,15 @@
     const d2 = dx * dx + dy * dy;
     if (d2 >= sum * sum) return;
 
+    // 生化模式：棋子碰到平民即"同化"（是否真正生效由上层按模式决定）
+    if (fx && fx.converts) {
+      if (a.kind === 'stone' && b.kind === 'civilian' && b.side !== a.side) {
+        fx.converts.push({ p: b, side: a.side });
+      } else if (b.kind === 'stone' && a.kind === 'civilian' && a.side !== b.side) {
+        fx.converts.push({ p: a, side: b.side });
+      }
+    }
+
     let d = Math.sqrt(d2), nx, ny;
     if (d < 1e-4) { d = 1e-4; nx = 1; ny = 0; }
     else { nx = dx / d; ny = dy / d; }

@@ -21,6 +21,7 @@ window.GC_LOCK = {
     ai: 'normal',     // 标准 AI
     penalty: 'pick',  // 每撞飞 3 个平民，自选一子下场
     aim: 'pull',      // 拉弓式瞄准
+    rules: 'classic', // 常规模式（想改成生化模式：'bio'）
     level: null       // 随机关卡（不使用自制关卡）
   },
 
@@ -34,6 +35,7 @@ window.GC_LOCK = {
     ai: 'normal',
     penalty: 'pick',
     aim: 'pull',
+    rules: 'classic',
     level: null
   }
 };

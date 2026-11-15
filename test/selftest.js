@@ -319,6 +319,51 @@ async function main() {
     while (G.state === 'sim' && guard++ < 6000) G.update(1 / 120);
     ok(G.stats.black.lost === 1 && G.stats.white.kills === 0, '己方棋子出界不会给对方加击杀分');
     ok(G.side === 'white', '回合正确移交给对方');
+
+    /* ---------- 生化模式 ---------- */
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, penalty: 'pick', rules: 'bio' });
+    {
+      const civ = G.pieces.find(p => p.kind === 'civilian');
+      const wStone = G.pieces.find(p => p.kind === 'stone' && p.side === 'white');
+      // 把平民贴到白子上，制造一次接触
+      civ.x = wStone.x + wStone.r + civ.r - 0.5;
+      civ.y = wStone.y;
+      wStone.vx = 40; wStone.vy = 0;
+      const fx = { hits: [], falls: [], converts: [] };
+      P.step(G.pieces, G.geom, P.FIXED_DT, fx);
+      ok(fx.converts.length > 0, '棋子接触平民会产生同化事件');
+      G.fx = fx;
+      G.applyConverts();
+      ok(civ.side === 'white', '平民被白方棋子碰到 → 归入白方');
+      ok(G.civOf('white') >= 1, 'civOf 统计到已收编平民');
+    }
+
+    // 撞飞 3 个平民：生化模式无任何惩罚
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 8, obs: 0, penalty: 'pick', rules: 'bio' });
+    for (let k = 1; k <= 3; k++) {
+      const civ = G.pieces.find(p => p.alive && p.kind === 'civilian');
+      G.side = 'black'; G.state = 'aim';
+      G.fire(G.pieces.indexOf(G.pieces.find(p => p.alive && p.side === 'black' && p.kind === 'stone')), 0, -1, 0.05);
+      civ.alive = false; civ.falling = true; civ.fallT = 0.95;
+      G.fx.falls = [civ];
+      guard = 0;
+      while (G.state === 'sim' && guard++ < 6000) G.update(1 / 120);
+    }
+    ok(G.stats.black.civ === 3 && P.count(G.pieces, 'black', 'stone') === 3,
+      '生化模式撞飞 3 个平民不损失任何棋子');
+
+    // 常规模式不会同化
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, rules: 'classic' });
+    {
+      const civ = G.pieces.find(p => p.kind === 'civilian');
+      const wStone = G.pieces.find(p => p.kind === 'stone' && p.side === 'white');
+      civ.x = wStone.x + wStone.r + civ.r - 0.5;
+      civ.y = wStone.y;
+      wStone.vx = 40; wStone.vy = 0;
+      const fx = { hits: [], falls: [] };
+      P.step(G.pieces, G.geom, P.FIXED_DT, fx);
+      ok(civ.side === null, '常规模式平民保持中立');
+    }
   }
 
   /* ---------- 5. 关卡 ---------- */

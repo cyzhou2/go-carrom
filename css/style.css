@@ -146,6 +146,12 @@ html[data-skin="flat"] .civ-line i { background: rgba(0, 0, 0, .10); }
 .civ-line i.owed { background: var(--bad); border-color: var(--bad); box-shadow: 0 0 10px var(--bad); animation: civPulse .7s ease-in-out infinite; }
 .civ-line em { font-style: normal; font-size: calc(9.5px * var(--fs, 1)); color: var(--muted); letter-spacing: .03em; margin-left: 2px; font-variant-numeric: tabular-nums; }
 .civ-line em b { color: var(--accent2); font-weight: 700; }
+/* 生化模式：不显示三段进度，只看当前收编数量 */
+.civ-line.bio i { display: none; }
+.civ-line.bio .of3 { display: none; }
+.civ-line.bio em { color: var(--good); }
+.civ-line.bio em b { color: var(--good); }
+.field-note { margin: 7px 0 0; font-size: calc(11.5px * var(--fs, 1)); line-height: 1.5; color: var(--muted); }
 @keyframes civPulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 .badge {
   margin-left: auto; font-size: calc(9.5px * var(--fs, 1)); padding: 2px 6px; border-radius: 999px;
@@ -559,14 +565,14 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: none;
   .modal-foot { padding: 9px 14px 12px; gap: 8px; }
   .modal-foot .btn { padding: 9px 14px; }
   .grid2 { grid-template-columns: 1fr; }
-  .seg button { padding: 9px 6px; font-size: calc(11.5px * var(--fs, 1)); }
+  .seg button { padding: 7px 6px; font-size: calc(11.5px * var(--fs, 1)); }
   .seg.seg-wrap { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .seg.seg-wrap::-webkit-scrollbar { display: none; }
   .seg.seg-wrap button { flex: 1 0 auto; white-space: nowrap; font-size: calc(11px * var(--fs, 1)); }
   .row-flex .btn { padding: 8px 10px; }
-  .field { margin-bottom: 7px; }
-  .field > label { margin-bottom: 4px; }
-  .num-input { padding: 7px 9px; }
+  .field { margin-bottom: 4px; }
+  .field > label { margin-bottom: 3px; }
+  .num-input { padding: 6px 9px; }
   .result-stats { gap: 6px; }
   .result-stats div { padding: 6px 10px; font-size: calc(10px * var(--fs, 1)); }
 }

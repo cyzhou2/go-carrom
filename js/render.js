@@ -393,14 +393,19 @@
     const s = R.w2s(p.x, p.y), r = R.px(p.r);
     const k = skin.civ;
     const t = clock();
+    // 生化模式：被收编的平民带上所属阵营的颜色
+    const own = p.side === 'black' || p.side === 'white' ? p.side : null;
+    const body = own === 'black' ? U.mix(k.fill, '#1b2028', 0.5)
+      : own === 'white' ? U.mix(k.fill, '#f7f2e7', 0.5) : k.fill;
+    const fresh = own && p.convertAt && (performance.now() - p.convertAt) < 800;
     c.save();
     c.beginPath(); c.arc(s.x + r * 0.08, s.y + r * 0.16, r * 0.98, 0, U.TAU);
     c.fillStyle = skin.shadow; c.fill();
 
     const g = c.createRadialGradient(s.x - r * 0.35, s.y - r * 0.4, r * 0.05, s.x, s.y, r);
-    g.addColorStop(0, U.mix(k.fill, '#ffffff', 0.55));
-    g.addColorStop(0.7, k.fill);
-    g.addColorStop(1, U.mix(k.fill, '#0a3a28', 0.45));
+    g.addColorStop(0, U.mix(body, '#ffffff', 0.55));
+    g.addColorStop(0.7, body);
+    g.addColorStop(1, U.mix(body, '#0a3a28', 0.45));
     c.beginPath(); c.arc(s.x, s.y, r, 0, U.TAU);
     c.fillStyle = g; c.fill();
 
@@ -414,6 +419,20 @@
       c.beginPath(); c.arc(s.x, s.y, rr, t * 0.4 + i, t * 0.4 + i + 2.1); c.stroke();
     }
     c.restore();
+
+    // 阵营环
+    if (own) {
+      c.beginPath(); c.arc(s.x, s.y, r * 0.82, 0, U.TAU);
+      c.strokeStyle = own === 'black' ? 'rgba(12,15,20,.92)' : 'rgba(255,250,240,.95)';
+      c.lineWidth = Math.max(2, R.px(3.4));
+      c.stroke();
+      if (fresh) {
+        c.beginPath(); c.arc(s.x, s.y, r * (1.12 + Math.sin(t * 12) * 0.05), 0, U.TAU);
+        c.strokeStyle = own === 'black' ? 'rgba(150,190,255,.75)' : 'rgba(255,215,140,.8)';
+        c.lineWidth = Math.max(1.5, R.px(2));
+        c.stroke();
+      }
+    }
 
     c.beginPath(); c.arc(s.x, s.y, r, 0, U.TAU);
     c.strokeStyle = U.rgba(k.ring, 0.9);

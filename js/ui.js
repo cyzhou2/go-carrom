@@ -19,6 +19,7 @@
     log: $('log'),
     overlay: $('overlay'), modalTitle: $('modalTitle'), modalSub: $('modalSub'),
     setupPanel: $('setupPanel'), resultPanel: $('resultPanel'), lockInfo: $('lockInfo'),
+    fieldPenalty: $('fieldPenalty'), bioNote: $('bioNote'),
     resultTrophy: $('resultIcon'), resultTitle: $('resultTitle'), resultText: $('resultText'),
     resultStats: $('resultStats'),
     btnStart: $('btnStart'), btnHelp: $('btnHelp'), btnRestart: $('btnRestart'),
@@ -38,7 +39,8 @@
 
   const setup = {
     mode: 'ai', board: 9, troops: 3, civ: 8, obs: 2,
-    ai: 'normal', penalty: 'pick', aim: 'direct', level: null
+    ai: 'normal', penalty: 'pick', aim: 'direct', level: null,
+    rules: 'classic'
   };
   let modalMode = 'setup';
   let aim = null;
@@ -201,6 +203,7 @@
     });
     segBind($('segAI'), 'data-ai', v => { setup.ai = v; });
     segBind($('segPenalty'), 'data-pen', v => { setup.penalty = v; });
+    segBind($('segRules'), 'data-rules', v => { setup.rules = v; syncRulesUI(); savePrefs(); });
     segBind($('segAim'), 'data-aim', v => { setup.aim = v; });
     segBind($('segSkin'), 'data-skin', v => setSkin(v, true));
 
@@ -257,6 +260,18 @@
     el.numObs.disabled = hasLevel;
     el.numObs.title = hasLevel ? '已使用关卡内的障碍' : '';
     syncLevelSelect();
+    syncRulesUI();
+  }
+
+  /** 规则切换：生化模式下隐藏平民惩罚选项 */
+  function syncRulesUI() {
+    const bio = setup.rules === 'bio';
+    document.querySelectorAll('#segRules button').forEach(b => {
+      b.classList.toggle('on', b.dataset.rules === setup.rules);
+    });
+    if (el.fieldPenalty) el.fieldPenalty.classList.toggle('hidden', bio);
+    if (el.bioNote) el.bioNote.classList.toggle('hidden', !bio);
+    document.querySelectorAll('.civ-line').forEach(n => n.classList.toggle('bio', bio));
   }
 
   function syncNames() {
@@ -324,6 +339,13 @@
   }
 
   /* ---------- HUD ---------- */
+  /** 生化模式：显示该方已收编的平民数（小格由 CSS 隐藏） */
+  function updateCivCount(node, n) {
+    if (!node) return;
+    const label = node.querySelector('em b');
+    if (label) label.textContent = String(n);
+  }
+
   function updateCivDots(node, civ, pendingPick) {
     if (!node) return;
     const every = GG.CONFIG.ai.civPenaltyEvery || 3;
@@ -347,8 +369,13 @@
     const wLeft = P.count(G.pieces, 'white', 'stone');
     el.p1Stat.textContent = `${bLeft} / ${total}`;
     el.p2Stat.textContent = `${wLeft} / ${total}`;
-    updateCivDots(el.p1Civ, G.stats.black.civ, G.state === 'pick' && G.pickSide === 'black');
-    updateCivDots(el.p2Civ, G.stats.white.civ, G.state === 'pick' && G.pickSide === 'white');
+    if (G.cfg.rules === 'bio') {
+      updateCivCount(el.p1Civ, P.count(G.pieces, 'black', 'civilian'));
+      updateCivCount(el.p2Civ, P.count(G.pieces, 'white', 'civilian'));
+    } else {
+      updateCivDots(el.p1Civ, G.stats.black.civ, G.state === 'pick' && G.pickSide === 'black');
+      updateCivDots(el.p2Civ, G.stats.white.civ, G.state === 'pick' && G.pickSide === 'white');
+    }
     el.cardP1.classList.toggle('active', G.state !== 'over' && G.side === 'black');
     el.cardP2.classList.toggle('active', G.state !== 'over' && G.side === 'white');
     el.cardP1.classList.toggle('dead', bLeft === 0);

@@ -219,12 +219,48 @@
     return pieces;
   }
 
+  /* ================= 生化模式 ================= */
+
+  function newFx() {
+    const fx = { hits: [], falls: [] };
+    if (G.cfg && G.cfg.rules === 'bio') fx.converts = [];
+    return fx;
+  }
+
+  /** 平民被某方棋子撞到 → 加入该方 */
+  function applyConvert(civ, side) {
+    if (!civ || !civ.alive || civ.falling) return false;
+    if (civ.kind !== 'civilian') return false;
+    if (civ.side === side) return false;
+    civ.side = side;
+    civ.convertAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    if (G.flips) G.flips[side]++;
+    return true;
+  }
+
+  G.applyConverts = function () {
+    const list = G.fx && G.fx.converts;
+    if (!list || !list.length) return;
+    let n = 0;
+    for (let i = 0; i < list.length; i++) {
+      if (applyConvert(list[i].p, list[i].side)) n++;
+    }
+    list.length = 0;
+    if (n && G.onSound) G.onSound('hit', { soft: true });
+  };
+
+  /** 生化模式下某方控制的平民数 */
+  G.civOf = function (side) {
+    return P.count(G.pieces, side, 'civilian');
+  };
+
   /* ================= 开局 ================= */
 
   G.start = function (cfg) {
     G.cfg = Object.assign({
       mode: 'ai', board: 9, troops: 3, civ: 8, obs: 2,
-      ai: 'normal', penalty: 'shooter', aim: 'direct', level: null
+      ai: 'normal', penalty: 'pick', aim: 'direct', level: null,
+      rules: 'classic'          // classic = 常规 | bio = 生化
     }, cfg || {});
 
     const level = G.cfg.level;
@@ -257,13 +293,15 @@
     G.acc = 0;
     G.simT = 0;
     G.state = 'aim';
-    G.fx = { hits: [], falls: [] };
+    G.fx = newFx();
     G.lastShot = null;
     G.pickSide = null;
     G.pickDue = 0;
+    G.flips = { black: 0, white: 0 };
 
     if (G.onLog) {
       G.onLog({ type: 'turn', text: `开局 · ${G.cfg.board} 路 · 每方 ${G.cfg.troops} 子 · 平民 ${G.cfg.civ}` });
+      if (G.cfg.rules === 'bio') G.onLog({ type: 'turn', text: '生化模式：棋子碰到平民即收编，撞飞平民无惩罚' });
       if (G.levelName) G.onLog({ type: 'turn', text: `关卡「${G.levelName}」` });
       if (G.placeNote) G.onLog({ type: 'penalty', text: G.placeNote });
     }
@@ -298,7 +336,8 @@
     G.state = 'sim';
     G.simT = 0;
     G.acc = 0;
-    G.fx = { hits: [], falls: [] };
+    G.fx = newFx();
+    if (G.cfg.rules === 'bio') G.flips = { black: 0, white: 0 };
     if (G.onSound) G.onSound('flick', { power });
     if (G.onSound) G.onSound('slide', {});
     return true;
@@ -319,6 +358,7 @@
 
   /** 撞飞平民对 AI 的负面价值：自选模式越接近 3 个越要命 */
   function civPenFor(side) {
+    if (G.cfg.rules === 'bio') return 0;   // 生化模式撞飞平民无惩罚
     if (G.cfg.penalty === 'score') return CFG.ai.killCivilian;
     if (G.cfg.penalty === 'pick') {
       const every = CFG.ai.civPenaltyEvery || 3;
@@ -490,9 +530,23 @@
     }
     if (civOut && G.onLog) {
       const every = CFG.ai.civPenaltyEvery || 3;
-      G.onLog({ type: 'penalty', text: `撞飞平民 · ${SIDE_CN[shooter]} ${st.civ % every || every}/${every}` });
+      if (G.cfg.rules === 'bio') {
+        G.onLog({ type: 'penalty', text: `撞飞平民 ${civOut} 个（生化模式无惩罚）` });
+      } else {
+        G.onLog({ type: 'penalty', text: `撞飞平民 · ${SIDE_CN[shooter]} ${st.civ % every || every}/${every}` });
+      }
     }
-    G.fx = { hits: [], falls: [] };
+    // 生化模式：本回合同化了多少平民
+    const bio = G.cfg.rules === 'bio';
+    if (bio && G.flips) {
+      if (G.flips[shooter] && G.onLog) {
+        G.onLog({ type: 'convert', text: `${SIDE_CN[shooter]}同化 ${G.flips[shooter]} 个平民` });
+      }
+      if (G.flips[opp] && G.onLog) {
+        G.onLog({ type: 'convert', text: `${SIDE_CN[opp]}的棋子碰到平民，${G.flips[opp]} 个平民倒向对方` });
+      }
+    }
+    G.fx = newFx();
 
     // 胜负优先
     const myLeft = P.count(G.pieces, shooter, 'stone');
@@ -500,13 +554,16 @@
     if (opLeft === 0 && myLeft > 0) { G._end(shooter); return; }
     if (myLeft === 0) { G._end(opp); return; }
 
-    // 平民惩罚
-    if (G.cfg.penalty === 'pick') {
-      const every = CFG.ai.civPenaltyEvery || 3;
-      const due = Math.floor(st.civ / every) - Math.floor(civBefore / every);
-      if (due > 0) { G._startPick(shooter, due); return; }
-    } else if (civOut) {
-      applyLegacyPenalty(shooter);
+    // 平民惩罚（生化模式完全没有惩罚）
+    const bioMode = G.cfg.rules === 'bio';
+    if (!bioMode) {
+      if (G.cfg.penalty === 'pick') {
+        const every = CFG.ai.civPenaltyEvery || 3;
+        const due = Math.floor(st.civ / every) - Math.floor(civBefore / every);
+        if (due > 0) { G._startPick(shooter, due); return; }
+      } else if (civOut) {
+        applyLegacyPenalty(shooter);
+      }
     }
 
     G.nextTurn();
@@ -571,6 +628,7 @@
       while (G.acc >= P.FIXED_DT && guard++ < P.PH.maxSubSteps) {
         P.step(G.pieces, G.geom, P.FIXED_DT, G.fx);
         G.acc -= P.FIXED_DT;
+        G.applyConverts();          // 生化模式：即时同化
       }
 
       if (G.fx.hits.length) {
