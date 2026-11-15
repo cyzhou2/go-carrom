@@ -1,0 +1,13 @@
+# 依赖 / 构建产物
+node_modules/
+dist/
+
+# 开发期浏览器调试快照
+test/artifacts/
+
+# 系统与编辑器杂项
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

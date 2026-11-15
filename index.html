@@ -1,0 +1,274 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" data-skin="wood" data-font="sans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1410">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>围棋弹棋 · Go Carrom</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c99a63'/%3E%3Ccircle cx='12' cy='12' r='6' fill='%23171410'/%3E%3Ccircle cx='21' cy='21' r='6' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-skin="wood">
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">
+      <div class="logo"><span class="dot b"></span><span class="dot w"></span></div>
+      <div class="brand-text">
+        <h1>围棋弹棋</h1>
+        <p>GO&nbsp;CARROM&nbsp;·&nbsp;<span id="buildTag">v6</span></p>
+      </div>
+    </div>
+
+    <div id="scoreboard">
+      <div class="score-card" id="cardP1">
+        <span class="mini-stone black"></span>
+        <div class="sc-text">
+          <b id="p1Name">黑方</b>
+          <small id="p1Stat">3 / 3</small>
+          <span class="civ-line" id="p1Civ" title="撞飞平民进度：满 3 个要自选一子下场">
+            <i></i><i></i><i></i><em>平民 <b>0</b>/3</em>
+          </span>
+        </div>
+        <span class="badge" id="p1Badge">黑</span>
+      </div>
+      <div class="vs">VS</div>
+      <div class="score-card" id="cardP2">
+        <span class="mini-stone white"></span>
+        <div class="sc-text">
+          <b id="p2Name">白方</b>
+          <small id="p2Stat">3 / 3</small>
+          <span class="civ-line" id="p2Civ" title="撞飞平民进度：满 3 个要自选一子下场">
+            <i></i><i></i><i></i><em>平民 <b>0</b>/3</em>
+          </span>
+        </div>
+        <span class="badge" id="p2Badge">白</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnSound" title="音效开关">🔊</button>
+      <button class="icon-btn" id="btnRules" title="规则说明">?</button>
+      <button class="icon-btn" id="btnSetup" title="对局设置">⚙</button>
+      <button class="btn ghost" id="btnLevel">关卡</button>
+      <button class="btn ghost" id="btnRestart">重开</button>
+    </div>
+  </header>
+
+  <main id="stage">
+    <div id="boardWrap">
+      <canvas id="boardCanvas"></canvas>
+      <div id="banner" class="banner"></div>
+      <div id="hint" class="hint">拖拽自己的棋子 <b>蓄力</b>，松手弹射</div>
+
+      <!-- 关卡编辑器工具条 -->
+      <div id="editorBar" class="editor-bar hidden">
+        <div class="eb-row">
+          <div class="eb-group">
+            <span class="eb-label">棋盘</span>
+            <select id="edBoard" class="num-input mini"></select>
+          </div>
+          <div class="eb-group">
+            <span class="eb-label">半径</span>
+            <button class="size-btn" id="edRadiusMinus" title="缩小 (-2%)">−</button>
+            <input type="range" id="edRadius" min="12" max="460" step="2" value="75">
+            <button class="size-btn" id="edRadiusPlus" title="放大 (+2%)">+</button>
+            <input type="number" id="edRadiusNum" class="num-input tiny" min="1" max="46" step="0.5" value="7.5">
+            <span class="eb-unit">%</span>
+          </div>
+          <div class="eb-group grow">
+            <input type="text" id="edName" class="num-input" placeholder="关卡名" maxlength="16">
+          </div>
+          <div class="eb-group">
+            <button class="btn ghost small" id="edSave">保存</button>
+            <button class="btn ghost small" id="edExport">导出</button>
+            <button class="btn ghost small" id="edImport">导入</button>
+            <button class="btn ghost small" id="edClear">清空</button>
+          </div>
+        </div>
+        <div class="eb-row">
+          <div class="eb-group grow">
+            <span class="eb-label">已保存</span>
+            <select id="edSaved" class="num-input grow"></select>
+            <button class="btn ghost small" id="edLoad">读取</button>
+            <button class="btn ghost small" id="edDelete">删除</button>
+          </div>
+          <div class="eb-group right">
+            <span class="eb-tip">单击空白放置 · 拖圆盘移动 · 拖手柄/滚轮改大小 · 右键删除</span>
+            <button class="btn ghost small" id="edCancel">返回</button>
+            <button class="btn primary small" id="edPlay">用此关卡开局</button>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="edFile" accept=".json,application/json" hidden>
+    </div>
+
+    <aside id="side">
+      <section class="panel">
+        <h2>对局信息</h2>
+        <ul class="facts">
+          <li><span>模式</span><b id="factMode">单人 vs AI</b></li>
+          <li><span>棋盘</span><b id="factBoard">9 × 9</b></li>
+          <li><span>每方棋子</span><b id="factTroops">3</b></li>
+          <li><span>关卡</span><b id="factLevel">随机</b></li>
+          <li><span>AI 难度</span><b id="factAI">标准</b></li>
+        </ul>
+        <div class="stat-row">
+          <div class="stat"><b id="statCiv">6</b><small>剩余平民</small></div>
+          <div class="stat"><b id="statObs">2</b><small>障碍圆盘</small></div>
+          <div class="stat"><b id="statTurn">1</b><small>回合数</small></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>外观</h2>
+        <div class="skins" id="skinPicker">
+          <button class="skin-btn active" data-skin="wood"><i class="sw sw-wood"></i>木纹</button>
+          <button class="skin-btn" data-skin="neon"><i class="sw sw-neon"></i>霓虹</button>
+          <button class="skin-btn" data-skin="flat"><i class="sw sw-flat"></i>极简</button>
+        </div>
+        <div class="fonts" id="fontPicker">
+          <button class="font-btn on" data-font="sans">黑体</button>
+          <button class="font-btn" data-font="serif">宋体</button>
+          <button class="font-btn" data-font="kai">楷体</button>
+          <button class="font-btn" data-font="mono">等宽</button>
+        </div>
+      </section>
+
+      <section class="panel log-panel">
+        <h2>战报</h2>
+        <ol id="log" class="log"></ol>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<!-- ============ 开始 / 结算 ============ -->
+<div id="overlay" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">围棋弹棋</h2>
+      <p id="modalSub">棋盘上的弹射对决 · 把对方棋子全部打下棋盘</p>
+    </div>
+
+    <div class="modal-body">
+      <div id="setupPanel">
+        <div class="field">
+          <label>游戏模式</label>
+          <div class="seg" id="segMode">
+            <button class="on" data-mode="ai">单人 vs AI</button>
+            <button data-mode="pvp">双人同屏</button>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>棋盘尺寸</label>
+            <select id="selBoard" class="num-input"></select>
+          </div>
+          <div class="field">
+            <label>每方棋子 <span class="lim">1–5</span></label>
+            <input type="number" id="numTroops" class="num-input" min="1" max="5" step="1" value="3">
+          </div>
+          <div class="field">
+            <label>平民数量 <span class="lim">0–60</span></label>
+            <input type="number" id="numCiv" class="num-input" min="0" max="60" step="1" value="8">
+          </div>
+          <div class="field">
+            <label>障碍圆盘 <span class="lim">0–12</span></label>
+            <input type="number" id="numObs" class="num-input" min="0" max="12" step="1" value="2">
+          </div>
+        </div>
+        <div class="field">
+          <label>关卡</label>
+          <div class="row-flex">
+            <select id="selLevel" class="num-input grow">
+              <option value="">随机生成（不使用关卡）</option>
+            </select>
+            <button class="btn ghost small" id="btnEditLevel">编辑关卡</button>
+          </div>
+        </div>
+        <div class="field" id="fieldAI">
+          <label>AI 难度</label>
+          <div class="seg" id="segAI">
+            <button data-ai="easy">温和</button>
+            <button class="on" data-ai="normal">标准</button>
+            <button data-ai="hard">凶狠</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>撞飞平民的惩罚</label>
+          <div class="seg seg-wrap" id="segPenalty">
+            <button class="on" data-pen="pick">每 3 个平民，自选一子下场</button>
+            <button data-pen="random">随机失去己方一子</button>
+            <button data-pen="score">仅扣分</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>瞄准方式</label>
+          <div class="seg" id="segAim">
+            <button class="on" data-aim="direct">指向式</button>
+            <button data-aim="pull">拉弓式</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>棋盘皮肤</label>
+          <div class="seg" id="segSkin">
+            <button class="on" data-skin="wood">木纹</button>
+            <button data-skin="neon">霓虹</button>
+            <button data-skin="flat">极简</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="resultPanel" class="hidden">
+        <div class="trophy" id="resultIcon">🏆</div>
+        <h3 id="resultTitle">黑方胜利</h3>
+        <p id="resultText"></p>
+        <div class="result-stats" id="resultStats"></div>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn ghost" id="btnHelp">怎么玩？</button>
+      <button class="btn primary" id="btnStart">开始对局</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 规则 ============ -->
+<div id="rulesOverlay" class="overlay hidden">
+  <div class="modal rules">
+    <div class="modal-head">
+      <h2>玩法规则</h2>
+      <p>围棋棋盘 · 冰壶手感 · 弹射对决</p>
+    </div>
+    <div class="modal-body">
+      <ol class="rule-list">
+        <li><b>轮流弹射。</b>每回合点住己方一颗棋子，向外拖拽瞄准并蓄力，松手弹射；棋子滑行减速后停下，回合结束。</li>
+        <li><b>击败敌人。</b>把对方棋子撞出棋盘边缘即将其消灭。对方棋子全部被消灭时获胜。</li>
+        <li><b>平民有风险。</b>撞飞平民会累积「平民伤亡」：<b>每累计 3 个</b>，你必须亲手选一颗自己的棋子下场（撞飞第 1、2 个不罚）。
+          罚则与弹射棋子无关——<b>就算它自灭出界也照交</b>。顶部棋子卡片用 3 个小格 + <b>n/3</b> 显示进度，第 3 格闪红即警告。</li>
+        <li><b>障碍圆盘。</b>灰色大圆盘是固定不动的无限质量物体，撞上会剧烈反弹，可以利用它做折射球。</li>
+        <li><b>别把自己弹下去。</b>己方棋子出界同样会被消灭，大力度要留神。</li>
+      </ol>
+      <p class="tip">小技巧：碰撞会传递动量——用一颗棋子同时撞飞两颗敌方棋子，或借障碍盘改变角度偷袭。</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" id="btnRulesClose">明白了</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/render.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
