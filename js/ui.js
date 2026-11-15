@@ -18,14 +18,14 @@
     statCiv: $('statCiv'), statObs: $('statObs'), statTurn: $('statTurn'),
     log: $('log'),
     overlay: $('overlay'), modalTitle: $('modalTitle'), modalSub: $('modalSub'),
-    setupPanel: $('setupPanel'), resultPanel: $('resultPanel'),
+    setupPanel: $('setupPanel'), resultPanel: $('resultPanel'), lockInfo: $('lockInfo'),
     resultTrophy: $('resultIcon'), resultTitle: $('resultTitle'), resultText: $('resultText'),
     resultStats: $('resultStats'),
     btnStart: $('btnStart'), btnHelp: $('btnHelp'), btnRestart: $('btnRestart'),
     btnRules: $('btnRules'), btnSound: $('btnSound'), btnRulesClose: $('btnRulesClose'),
     btnLevel: $('btnLevel'), btnEditLevel: $('btnEditLevel'), btnSetup: $('btnSetup'),
     rulesOverlay: $('rulesOverlay'),
-    fieldAI: $('fieldAI'), segMode: $('segMode'), skinPicker: $('skinPicker'), fontPicker: $('fontPicker'),
+    fieldAI: $('fieldAI'), segMode: $('segMode'), skinPicker: $('skinPicker'), sizePicker: $('sizePicker'),
     selBoard: $('selBoard'), numTroops: $('numTroops'), numCiv: $('numCiv'), numObs: $('numObs'),
     selLevel: $('selLevel'),
     editorBar: $('editorBar'), edBoard: $('edBoard'), edRadius: $('edRadius'),
@@ -48,20 +48,15 @@
 
   const diffName = k => (CFG.difficulty[k] && CFG.difficulty[k].name) || k;
 
-  /* ---------- 字体 ---------- */
-  const FONTS = {
-    sans: '"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif',
-    serif: '"Songti SC","SimSun","Noto Serif SC","Source Han Serif SC",Georgia,serif',
-    kai: '"Kaiti SC","KaiTi","STKaiti","Kaiti TC","Songti SC",serif',
-    mono: '"Cascadia Mono","SF Mono","Consolas","DejaVu Sans Mono","Noto Sans Mono",monospace'
-  };
+  /* ---------- 界面字号 ---------- */
+  const SIZES = { s: 0.9, m: 1, l: 1.12, xl: 1.26 };
 
-  function setFont(name, persist) {
-    const key = FONTS[name] ? name : 'sans';
-    document.documentElement.dataset.font = key;
-    R.setFont(FONTS[key]);
-    document.querySelectorAll('button[data-font]').forEach(b => {
-      b.classList.toggle('on', b.dataset.font === key);
+  function setFontSize(name, persist) {
+    const key = SIZES[name] ? name : 'm';
+    document.documentElement.dataset.size = key;
+    R.setUiScale(SIZES[key]);
+    document.querySelectorAll('button[data-size]').forEach(b => {
+      b.classList.toggle('on', b.dataset.size === key);
     });
     if (persist !== false) savePrefs();
   }
@@ -72,7 +67,7 @@
       localStorage.setItem('gocarrom.prefs', JSON.stringify({
         setup,
         skin: document.documentElement.dataset.skin,
-        font: document.documentElement.dataset.font
+        size: document.documentElement.dataset.size
       }));
     } catch (e) { /* ignore */ }
   }
@@ -91,7 +86,7 @@
         }
       }
       if (p.skin) setSkin(p.skin, false);
-      if (p.font) setFont(p.font, false);
+      if (p.size) setFontSize(p.size, false);
     } catch (e) { /* ignore */ }
   }
 
@@ -116,11 +111,14 @@
     modalMode = 'setup';
     el.setupPanel.classList.remove('hidden');
     el.resultPanel.classList.add('hidden');
-    el.modalTitle.textContent = '围棋弹棋';
-    el.modalSub.textContent = '棋盘上的弹射对决 · 把对方棋子全部打下棋盘';
-    el.btnStart.textContent = '开始对局';
+    el.modalTitle.textContent = LOCK ? (LOCK.title || '围棋弹棋') : '围棋弹棋';
+    el.modalSub.textContent = LOCK
+      ? (LOCK.subtitle || '默认设置版 · 打开即玩')
+      : '棋盘上的弹射对决 · 把对方棋子全部打下棋盘';
+    el.btnStart.textContent = LOCK ? '开始游戏' : '开始对局';
     el.btnHelp.classList.remove('hidden');
     el.btnHelp.textContent = '怎么玩？';
+    if (LOCK) updateLockInfo();
     syncLevelSelect();
     showOverlay();
   }
@@ -267,6 +265,62 @@
     el.p2Name.textContent = air ? 'AI · 白' : '白方';
     el.factMode.textContent = air ? '单人 vs AI' : '双人同屏';
     el.factAI.textContent = air ? diffName(setup.ai) : '—';
+  }
+
+  /* ---------- 默认设置版（锁定参数，去掉设置负担） ---------- */
+  let LOCK = null;
+
+  function isPortrait() {
+    return window.innerHeight > window.innerWidth || window.matchMedia('(max-width: 760px)').matches;
+  }
+
+  function lockPreset() {
+    if (!LOCK) return null;
+    return isPortrait() ? LOCK.mobile : LOCK.desktop;
+  }
+
+  function updateLockInfo() {
+    if (!LOCK || !el.lockInfo) return;
+    const p = lockPreset();
+    const name = (isPortrait() ? LOCK.label.mobile : LOCK.label.desktop) || '默认设置';
+    const parts = [
+      `棋盘 ${p.board}×${p.board}`,
+      `每方 ${p.troops} 子`,
+      `平民 ${p.civ}`,
+      `障碍圆盘 ${p.obs}`,
+      `AI ${diffName(p.ai)}`,
+      '每 3 个平民罚 1 子',
+      '拉弓式瞄准'
+    ];
+    el.lockInfo.innerHTML = `<b>${name}</b><span>${parts.join(' · ')}</span>`;
+    el.lockInfo.classList.remove('hidden');
+  }
+
+  function applyLock(lock) {
+    LOCK = lock || null;
+    if (!LOCK) return;
+    document.body.classList.add('simple');
+    ['btnLevel', 'btnEditLevel', 'btnSetup'].forEach(k => {
+      if (el[k]) el[k].style.display = 'none';
+    });
+    if (el.setupPanel) el.setupPanel.classList.add('locked');
+    updateLockInfo();
+  }
+
+  function applyLockToSetup() {
+    const p = lockPreset();
+    if (!p) return;
+    Object.assign(setup, p, { level: null });
+    // 同步（默认版里被隐藏的）表单控件状态，避免出现"显示与实际不一致"
+    document.querySelectorAll('#segAim button').forEach(b => b.classList.toggle('on', b.dataset.aim === setup.aim));
+    document.querySelectorAll('#segPenalty button').forEach(b => b.classList.toggle('on', b.dataset.pen === setup.penalty));
+    document.querySelectorAll('#segMode button').forEach(b => b.classList.toggle('on', b.dataset.mode === setup.mode));
+    document.querySelectorAll('#segAI button').forEach(b => b.classList.toggle('on', b.dataset.ai === setup.ai));
+    document.querySelectorAll('#segSkin button').forEach(b => b.classList.toggle('on', b.dataset.skin === document.documentElement.dataset.skin));
+    if (el.selBoard) el.selBoard.value = String(setup.board);
+    if (el.numTroops) el.numTroops.value = setup.troops;
+    if (el.numCiv) el.numCiv.value = setup.civ;
+    if (el.numObs) el.numObs.value = setup.obs;
   }
 
   /* ---------- HUD ---------- */
@@ -698,6 +752,7 @@
   function restart() {
     if (!G.cfg || E.active) return;
     el.log.innerHTML = '';
+    applyLockToSetup();
     G.start(setup);
     syncNames();
     hideOverlay();
@@ -710,11 +765,17 @@
     if (el.buildTag) el.buildTag.textContent = CFG.build || 'v5';
     loadPrefs();
     setSkin(document.documentElement.dataset.skin || 'wood', false);
-    setFont(document.documentElement.dataset.font || 'sans', false);
+    setFontSize(document.documentElement.dataset.size || 'm', false);
     bindSetup();
     bindEditor();
     syncNames();
     syncSetupUI();
+
+    // 默认设置版：锁定配置（按横竖屏给不同预设）
+    if (window.GC_LOCK) {
+      applyLock(window.GC_LOCK);
+      applyLockToSetup();
+    }
 
     G.onLog = pushLog;
     G.onBanner = showBanner;
@@ -726,6 +787,7 @@
       A.ensure();
       el.log.innerHTML = '';
       hideOverlay();
+      applyLockToSetup();
       G.start(setup);
       syncNames();
       syncSetupUI();
@@ -758,9 +820,9 @@
       if (b) setSkin(b.dataset.skin, true);
     });
 
-    el.fontPicker.addEventListener('click', e => {
+    el.sizePicker.addEventListener('click', e => {
       const b = e.target.closest('button');
-      if (b) setFont(b.dataset.font, true);
+      if (b) setFontSize(b.dataset.size, true);
     });
 
     new ResizeObserver(() => R.resize()).observe(el.wrap);

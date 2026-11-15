@@ -62,6 +62,7 @@
   let particles = [];
   let floats = [];           // 命中/惩罚飘字
   let uiFont = '"PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+  let uiScale = 1;
   const MARGIN = 34;         // 视野在木板外的留白（世界单位）
 
   R.init = function (cv) {
@@ -76,9 +77,9 @@
   };
   R.getSkin = function () { return skin; };
 
-  /** 棋盘飘字用的字体（跟随界面的字体设置） */
-  R.setFont = function (stack) {
-    if (stack) uiFont = stack;
+  /** 棋盘飘字的字号缩放（跟随界面字号设置） */
+  R.setUiScale = function (f) {
+    uiScale = f || 1;
   };
 
   R.resize = function () {
@@ -823,7 +824,7 @@
         const k = f.t / f.life;
         const s = R.w2s(f.x, f.y - k * 70);
         const alpha = k < 0.15 ? k / 0.15 : 1 - Math.pow((k - 0.15) / 0.85, 2);
-        const size = Math.max(11, R.px(30)) * (1 + (1 - Math.min(1, k * 4)) * 0.25);
+        const size = Math.max(11, R.px(30)) * (1 + (1 - Math.min(1, k * 4)) * 0.25) * uiScale;
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
         ctx.font = `800 ${size}px ${uiFont}`;
         ctx.lineWidth = Math.max(2, size * 0.16);

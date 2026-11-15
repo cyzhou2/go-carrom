@@ -1,15 +1,40 @@
-﻿# 围棋弹棋 · Go Carrom
+# 围棋弹棋 · Go Carrom
 
 一个跑在浏览器里的**双人 / 单人 vs AI 弹棋游戏**：棋盘是围棋盘，棋子是冰壶手感——
 拖拽蓄力、松手弹射、摩擦减速，把对方的棋子撞出棋盘边缘即可消灭，全部消灭即获胜。
 
 纯前端、零依赖、零构建：**打开网页就能玩**。
 
-🔗 **在线地址：<https://cyzhou2.github.io/go-carrom/>**（GitHub Pages，手机浏览器同样可玩）
+🔗 **两个线上版本**（同一套引擎，两份入口）：
+
+| 版本 | 地址 | 说明 |
+| --- | --- | --- |
+| 全功能版 | <https://cyzhou2.github.io/go-carrom/> | 可自由设置棋盘、子数、平民、障碍、AI 难度、瞄准方式，含关卡编辑器 |
+| **默认设置版** | <https://cyzhou2.github.io/go-carrom/default/> | **去掉所有配置项**，按设备自动配好，打开就玩（保留教程、皮肤与字号） |
 
 ![游戏预览](preview.png)
 
 ---
+
+## 默认设置版（无障碍版）
+
+`default/` 是一个"零设置"入口：没有开始面板里的各种选项，点「开始游戏」即为最佳预设。
+
+| | 电脑（横屏） | 手机（竖屏） |
+| --- | --- | --- |
+| 棋盘 | 19×19 | 11×11 |
+| 棋子 | 3 v 3 | 2 v 2 |
+| 平民 | 50 | 15 |
+| 障碍大圆盘 | 3 | 2 |
+| AI | 标准 | 标准 |
+| 平民罚则 | 每撞飞 3 个自选 1 子下场 | 同左 |
+| 关卡 | 随机生成 | 随机生成 |
+| 瞄准 | 拉弓式 | 拉弓式 |
+| 皮肤 / 字号 | 可自选 | 可自选 |
+
+- 预设写在 [`default/default.js`](default/default.js)，只改这个文件就能调；
+- 页面壳由 `node test/sync-default.js` 从根目录 `index.html` 生成（改完根页面记得跑一次）；
+- 实现方式：`window.GC_LOCK` 让 `js/ui.js` 隐藏所有配置项、按 `window.innerHeight > window.innerWidth` 选横/竖屏预设，并在每次开局前强制套用。
 
 ## 快速开始
 
@@ -64,7 +89,7 @@
 
 **外观**（侧栏「外观」面板，选择会记住）：
 - **棋盘皮肤**：木纹 / 霓虹 / 极简；
-- **字体**：黑体 / 宋体 / 楷体 / 等宽 —— 界面与棋盘飘字一起切换，纯用系统已装字体，不下载任何字体文件。
+- **界面字号**：小 / 标准 / 大 / 特大 —— 通过 CSS 变量 `--fs` 缩放界面上所有文字，棋盘上的飘字也同步缩放。
 
 ---
 
@@ -182,8 +207,11 @@ error: {
 
 ```
 goCarrom/
-├─ index.html          页面骨架（HUD / 侧栏 / 开始与结算面板 / 编辑器工具条 / 规则）
-├─ css/style.css       全部样式（三套皮肤通过 html[data-skin] 变量切换）
+├─ index.html          全功能版页面（HUD / 侧栏 / 开始与结算面板 / 编辑器工具条 / 规则）
+├─ default/            默认设置版（零配置入口）
+│  ├─ index.html       由 test/sync-default.js 从根 index.html 生成
+│  └─ default.js       ★ 横屏 / 竖屏两套预设
+├─ css/style.css       全部样式（皮肤 html[data-skin]、字号 html[data-size] 变量切换）
 ├─ js/
 │  ├─ util.js          数学、颜色、正态采样、可复现随机数
 │  ├─ config.js        ★ 全部可调参数（物理 / 误差 / 布局 / AI / 难度 / 规则上限）
@@ -193,21 +221,28 @@ goCarrom/
 │  ├─ render.js        Canvas 渲染：棋盘缓存、棋子与自旋标记、瞄准轨迹、粒子、出界动画
 │  ├─ audio.js         WebAudio 合成音效（无外部音频资源）
 │  ├─ game.js          对局状态机：聚类摆盘、回合、惩罚、关卡接入、胜负
-│  └─ ui.js            指针交互、HUD、设置、关卡编辑器界面、渲染循环
+│  └─ ui.js            指针交互、HUD、设置、关卡编辑器界面、渲染循环、默认版锁定
 └─ test/
    ├─ selftest.js      无浏览器规则自测（node test/selftest.js）
+   ├─ sync-default.js  重新生成 default/index.html
    ├─ devserver.py     禁用缓存的开发服务器（python test/devserver.py 8123）
    └─ artifacts/       开发期浏览器调试快照（可选，已 gitignore）
 ```
 
 ## 部署（GitHub Pages）
 
-仓库：<https://github.com/cyzhou2/go-carrom>　线上：<https://cyzhou2.github.io/go-carrom/>
+仓库：<https://github.com/cyzhou2/go-carrom>
 
-- 站点是纯静态的，**仓库根目录就是网站根目录**（`index.html` 在根上）；
+| 版本 | 线上地址 |
+| --- | --- |
+| 全功能版 | <https://cyzhou2.github.io/go-carrom/> |
+| 默认设置版 | <https://cyzhou2.github.io/go-carrom/default/> |
+
+- 站点是纯静态的，**仓库根目录就是网站根目录**（`index.html` 在根上，`default/` 是子目录）；
 - Pages 设置：`Settings → Pages → Source: Deploy from a branch → main / (root)`；
 - 仓库里有 `.nojekyll`，避免 GitHub 用 Jekyll 处理静态文件；
 - **更新方式**：改完代码后 `git add -A && git commit -m "..." && git push`，Pages 会自动重新构建（约 1 分钟）。
+  改了根 `index.html` 记得先跑 `node test/sync-default.js`，让默认版权同步。
 
 ## 自测
 

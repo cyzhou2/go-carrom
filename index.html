@@ -1,5 +1,5 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN" data-skin="wood" data-font="sans">
+<!DOCTYPE html>
+<html lang="zh-CN" data-skin="wood" data-size="m">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -18,7 +18,7 @@
       <div class="logo"><span class="dot b"></span><span class="dot w"></span></div>
       <div class="brand-text">
         <h1>围棋弹棋</h1>
-        <p>GO&nbsp;CARROM&nbsp;·&nbsp;<span id="buildTag">v6</span></p>
+        <p>GO&nbsp;CARROM&nbsp;·&nbsp;<span id="buildTag">v7</span></p>
       </div>
     </div>
 
@@ -129,11 +129,11 @@
           <button class="skin-btn" data-skin="neon"><i class="sw sw-neon"></i>霓虹</button>
           <button class="skin-btn" data-skin="flat"><i class="sw sw-flat"></i>极简</button>
         </div>
-        <div class="fonts" id="fontPicker">
-          <button class="font-btn on" data-font="sans">黑体</button>
-          <button class="font-btn" data-font="serif">宋体</button>
-          <button class="font-btn" data-font="kai">楷体</button>
-          <button class="font-btn" data-font="mono">等宽</button>
+        <div class="fonts" id="sizePicker">
+          <button class="font-btn" data-size="s">小</button>
+          <button class="font-btn on" data-size="m">标准</button>
+          <button class="font-btn" data-size="l">大</button>
+          <button class="font-btn" data-size="xl">特大</button>
         </div>
       </section>
 
@@ -155,6 +155,7 @@
 
     <div class="modal-body">
       <div id="setupPanel">
+        <div id="lockInfo" class="lock-info hidden"></div>
         <div class="field">
           <label>游戏模式</label>
           <div class="seg" id="segMode">
@@ -212,7 +213,7 @@
             <button data-aim="pull">拉弓式</button>
           </div>
         </div>
-        <div class="field">
+        <div class="field keep">
           <label>棋盘皮肤</label>
           <div class="seg" id="segSkin">
             <button class="on" data-skin="wood">木纹</button>
