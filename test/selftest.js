@@ -331,12 +331,41 @@ async function main() {
       wStone.vx = 40; wStone.vy = 0;
       const fx = { hits: [], falls: [], converts: [] };
       P.step(G.pieces, G.geom, P.FIXED_DT, fx);
-      ok(fx.converts.length > 0, '棋子接触平民会产生同化事件');
+      ok(fx.converts.length > 0, '子力接触平民会产生感染事件');
       G.fx = fx;
       G.applyConverts();
-      // 谁在行动就归谁：这回合是黑方，被白方棋子碰到的平民也归黑方
-      ok(G.side === 'black' && civ.side === 'black', '被碰到的平民一律归当前行动方');
-      ok(G.civOf('black') >= 1 && G.civOf('white') === 0, 'civOf 统计到当前行动方的平民');
+      ok(civ.side === 'white', '平民锁定到撞它的那颗子力所属方（白）');
+      ok(G.civOf('white') === 1 && G.civOf('black') === 0, 'civOf 统计到感染方');
+    }
+
+    // 被感染的子力也会继续传播（子力自身就是传染源）
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, rules: 'bio' });
+    {
+      const civs = G.pieces.filter(p => p.kind === 'civilian');
+      const src = civs[0], dst = civs[1];
+      src.side = 'black';
+      src.x = 500; src.y = 500; src.vx = 70; src.vy = 0; src.w = 0;
+      dst.x = 500 + src.r + dst.r - 1; dst.y = 500; dst.vx = dst.vy = 0;
+      const fx = { hits: [], falls: [], converts: [] };
+      P.step(G.pieces, G.geom, P.FIXED_DT, fx);
+      ok(fx.converts.length > 0, '被感染的子力移动时也会产生感染事件');
+      G.fx = fx; G.applyConverts();
+      ok(dst.side === 'black', '被感染子力撞到的平民同样变成黑方');
+    }
+
+    // 已感染＝锁定：敌方撞上去也改不回来
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, rules: 'bio' });
+    {
+      const civ = G.pieces.find(p => p.kind === 'civilian');
+      const wStone = G.pieces.find(p => p.kind === 'stone' && p.side === 'white');
+      civ.side = 'black';
+      civ.x = wStone.x + wStone.r + civ.r - 0.5;
+      civ.y = wStone.y;
+      wStone.vx = 40; wStone.vy = 0;
+      const fx = { hits: [], falls: [], converts: [] };
+      P.step(G.pieces, G.geom, P.FIXED_DT, fx);
+      G.fx = fx; G.applyConverts();
+      ok(civ.side === 'black', '已被感染的子力不会被对方改写（锁定）');
     }
 
     // 撞飞 3 个平民：生化模式无任何惩罚

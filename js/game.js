@@ -227,11 +227,12 @@
     return fx;
   }
 
-  /** 平民被撞到 → 加入指定的阵营（生化模式里恒为"当前行动方"） */
+  /** 平民被撞到 → 立刻锁定到撞它的那颗子力所属阵营（一旦有阵营就永不再变） */
   function applyConvert(civ, side) {
     if (!civ || !civ.alive || civ.falling) return false;
     if (civ.kind !== 'civilian') return false;
-    if (civ.side === side) return false;
+    if (civ.side) return false;                       // 已锁定
+    if (side !== 'black' && side !== 'white') return false;
     civ.side = side;
     civ.convertAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     if (G.flips) G.flips[side]++;
@@ -242,11 +243,9 @@
   G.applyConverts = function () {
     const list = G.fx && G.fx.converts;
     if (!list || !list.length) return;
-    // 谁在行动，被碰到的平民就归谁（"感染"只形容传播特性，一定是己方子力）
-    const owner = G.side;
     let n = 0;
     for (let i = 0; i < list.length; i++) {
-      if (applyConvert(list[i].p, owner)) n++;
+      if (applyConvert(list[i].p, list[i].side)) n++;
     }
     list.length = 0;
     if (n && G.onSound) G.onSound('hit', { soft: true });
@@ -561,11 +560,14 @@
         G.onLog({ type: 'penalty', text: `撞飞平民 · ${SIDE_CN[shooter]} ${st.civ % every || every}/${every}` });
       }
     }
-    // 生化模式：本回合同化了多少平民
+    // 生化模式：本回合双方各自同化了多少平民
     const bio = G.cfg.rules === 'bio';
     if (bio && G.flips) {
       if (G.flips[shooter] && G.onLog) {
-        G.onLog({ type: 'convert', text: `${SIDE_CN[shooter]}同化 ${G.flips[shooter]} 个平民，转为己方子力` });
+        G.onLog({ type: 'convert', text: `${SIDE_CN[shooter]}感染 ${G.flips[shooter]} 个平民，转为己方子力` });
+      }
+      if (G.flips[opp] && G.onLog) {
+        G.onLog({ type: 'convert', text: `${SIDE_CN[opp]}的传播链感染了 ${G.flips[opp]} 个平民` });
       }
     }
     G.fx = newFx();

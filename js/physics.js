@@ -156,11 +156,11 @@
     const d2 = dx * dx + dy * dy;
     if (d2 >= sum * sum) return;
 
-    // 生化模式：棋子碰到平民即"同化"（是否真正生效由上层按模式决定）
+    // 生化模式：任何"有阵营的子力"（初始棋子或已被同化的子力）碰到中立平民 → 立刻同化
     if (fx && fx.converts) {
-      if (a.kind === 'stone' && b.kind === 'civilian' && b.side !== a.side) {
+      if (a.side && b.kind === 'civilian' && !b.side) {
         fx.converts.push({ p: b, side: a.side });
-      } else if (b.kind === 'stone' && a.kind === 'civilian' && a.side !== b.side) {
+      } else if (b.side && a.kind === 'civilian' && !a.side) {
         fx.converts.push({ p: a, side: b.side });
       }
     }
