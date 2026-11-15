@@ -1,9 +1,11 @@
-# 围棋弹棋 · Go Carrom
+﻿# 围棋弹棋 · Go Carrom
 
 一个跑在浏览器里的**双人 / 单人 vs AI 弹棋游戏**：棋盘是围棋盘，棋子是冰壶手感——
 拖拽蓄力、松手弹射、摩擦减速，把对方的棋子撞出棋盘边缘即可消灭，全部消灭即获胜。
 
-纯前端、零依赖、零构建：**双击 `index.html` 就能玩**。
+纯前端、零依赖、零构建：**打开网页就能玩**。
+
+🔗 **在线地址：<https://cyzhou2.github.io/go-carrom/>**（GitHub Pages，手机浏览器同样可玩）
 
 ![游戏预览](preview.png)
 
@@ -13,11 +15,12 @@
 
 | 方式 | 操作 |
 | --- | --- |
-| 直接打开 | 双击 `index.html`（Chrome / Edge / Firefox 均可） |
+| 在线直接玩 | 打开 <https://cyzhou2.github.io/go-carrom/>，手机可「添加到主屏幕」当 App 用 |
+| 本机双击 | 双击 `index.html`（Chrome / Edge / Firefox 均可） |
 | 本地服务（推荐调试） | `python test/devserver.py 8123` → 访问 `http://127.0.0.1:8123/`（已禁用缓存，改完代码刷新即生效） |
 | 普通静态服务 | `python -m http.server 8123`（注意浏览器可能缓存旧 JS） |
 
-> **版本确认**：左上角 logo 旁会显示版本号（如 `v5`）。改动后如果还看到旧行为，
+> **版本确认**：左上角 logo 旁会显示版本号（如 `v6`）。改动后如果还看到旧行为，
 > 多半是浏览器在读缓存的 `js/*.js` —— 用上面的 devserver，或 `Ctrl+F5` 强刷。
 
 ---
@@ -59,7 +62,20 @@
 | 惩罚方式 | **每 3 个平民自选一子下场** / 随机一子 / 仅扣分 | |
 | 瞄准方式 | 指向式 / 拉弓式 | |
 
-**棋盘皮肤**（侧栏或开始面板切换，会记住选择）：木纹 / 霓虹 / 极简。
+**外观**（侧栏「外观」面板，选择会记住）：
+- **棋盘皮肤**：木纹 / 霓虹 / 极简；
+- **字体**：黑体 / 宋体 / 楷体 / 等宽 —— 界面与棋盘飘字一起切换，纯用系统已装字体，不下载任何字体文件。
+
+---
+
+## 移动端
+
+- **竖屏优先**：手机上棋盘自动变成正方形并占满宽度，状态栏（棋子数 + `平民 n/3` 进度）在顶部两行，
+  统计与外观面板在下方可横向滑动。
+- **触控优化**：点选棋子的命中范围放大到 2.15 倍，平民惩罚点选放大到 2.4 倍；
+  画布 `touch-action: none`，拖拽瞄准不会触发页面滚动；支持刘海屏安全区（`viewport-fit=cover` + `env(safe-area-inset)`）。
+- **横屏**：自动切回左右布局（窄侧栏 + 大棋盘）。
+- 建议在手机浏览器里「添加到主屏幕」，即可全屏无地址栏游玩。
 
 ---
 
@@ -181,8 +197,17 @@ goCarrom/
 └─ test/
    ├─ selftest.js      无浏览器规则自测（node test/selftest.js）
    ├─ devserver.py     禁用缓存的开发服务器（python test/devserver.py 8123）
-   └─ artifacts/       开发期浏览器调试快照（可删）
+   └─ artifacts/       开发期浏览器调试快照（可选，已 gitignore）
 ```
+
+## 部署（GitHub Pages）
+
+仓库：<https://github.com/cyzhou2/go-carrom>　线上：<https://cyzhou2.github.io/go-carrom/>
+
+- 站点是纯静态的，**仓库根目录就是网站根目录**（`index.html` 在根上）；
+- Pages 设置：`Settings → Pages → Source: Deploy from a branch → main / (root)`；
+- 仓库里有 `.nojekyll`，避免 GitHub 用 Jekyll 处理静态文件；
+- **更新方式**：改完代码后 `git add -A && git commit -m "..." && git push`，Pages 会自动重新构建（约 1 分钟）。
 
 ## 自测
 
