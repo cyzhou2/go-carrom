@@ -14,6 +14,11 @@
   }
 
   /** 结果评分：站在 my 的角度 */
+  /** 生化模式下被收编的平民也是棋子 */
+  function isPiece(p) {
+    return p.kind === 'stone' || (p.kind === 'civilian' && !!p.side);
+  }
+
   function scoreOutcome(sim, before, my, opp, geom, pen) {
     const pl = geom.plank;
     const penKill = pen || AIC.killCivilian;
@@ -22,13 +27,13 @@
       const a = sim[i], b = before[i];
       if (!b.alive || b.kind === 'obstacle') continue;
       const died = !a.alive;
-      if (b.side === opp && b.kind !== 'civilian') {
+      if (b.side === opp && isPiece(b)) {
         if (died) s += AIC.killEnemy;
         else {
           const near = Math.max(0, 1 - edgeGap(a, pl) / (geom.cell * AIC.edgeRange));
           s += near * near * AIC.edgeWeight;
         }
-      } else if (b.side === my && b.kind !== 'civilian') {
+      } else if (b.side === my && isPiece(b)) {
         if (died) s -= AIC.loseSelf;
         else {
           const near = Math.max(0, 1 - edgeGap(a, pl) / (geom.cell * AIC.selfEdgeRange));

@@ -364,6 +364,46 @@ async function main() {
       P.step(G.pieces, G.geom, P.FIXED_DT, fx);
       ok(civ.side === null, '常规模式平民保持中立');
     }
+
+    // 万民皆兵：被同化的平民就是棋子，可选、可弹、计入棋子数
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, rules: 'bio' });
+    {
+      const civ = G.pieces.find(p => p.kind === 'civilian');
+      civ.side = 'black';
+      ok(G.selectable(G.pieces.indexOf(civ)), '被同化的平民可以被选中');
+      ok(G.leftOf('black') === 4, '同化后该方棋子数 +1（3 → 4）');
+      G.side = 'black'; G.state = 'aim';
+      ok(G.fire(G.pieces.indexOf(civ), 0, -1, 0.3) === true, '被同化的平民可以弹射');
+      let n2 = 0;
+      while (G.state === 'sim' && n2++ < 6000) G.update(1 / 120);
+      ok(G.state !== 'sim', '弹射被同化的平民能正常结算');
+    }
+
+    // 阵营判定：击落对方被同化的平民 = 击杀；自己的 = 自灭
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, rules: 'bio' });
+    {
+      const civW = G.pieces.find(p => p.kind === 'civilian');
+      civW.side = 'white';
+      G.side = 'black'; G.state = 'aim';
+      G.fire(G.pieces.indexOf(G.pieces.find(p => p.side === 'black' && p.kind === 'stone')), 0, -1, 0.05);
+      civW.alive = false; civW.falling = true; civW.fallT = 0.95;
+      G.fx.falls = [civW];
+      guard = 0;
+      while (G.state === 'sim' && guard++ < 6000) G.update(1 / 120);
+      ok(G.stats.black.kills === 1, '击落对方被同化的平民计为击杀');
+    }
+    G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, rules: 'bio' });
+    {
+      const civB = G.pieces.find(p => p.kind === 'civilian');
+      civB.side = 'black';
+      G.side = 'black'; G.state = 'aim';
+      G.fire(G.pieces.indexOf(G.pieces.find(p => p.side === 'black' && p.kind === 'stone')), 0, -1, 0.05);
+      civB.alive = false; civB.falling = true; civB.fallT = 0.95;
+      G.fx.falls = [civB];
+      guard = 0;
+      while (G.state === 'sim' && guard++ < 6000) G.update(1 / 120);
+      ok(G.stats.black.lost === 1, '自己同化的平民出界计为自灭');
+    }
   }
 
   /* ---------- 5. 关卡 ---------- */

@@ -339,15 +339,21 @@
   }
 
   /* ---------- HUD ---------- */
-  /** 生化模式：显示该方已收编的平民数（小格由 CSS 隐藏） */
+  /** 生化模式：这一栏显示「感染：N」（被同化的平民数） */
   function updateCivCount(node, n) {
     if (!node) return;
     const label = node.querySelector('em b');
     if (label) label.textContent = String(n);
+    const lb = node.querySelector('.civ-label');
+    if (lb) lb.textContent = '感染：';
+    node.classList.add('bio');
   }
 
   function updateCivDots(node, civ, pendingPick) {
     if (!node) return;
+    const lb = node.querySelector('.civ-label');
+    if (lb) lb.textContent = '平民';
+    node.classList.remove('bio');
     const every = GG.CONFIG.ai.civPenaltyEvery || 3;
     const n = pendingPick ? every : (civ % every);
     const dots = node.querySelectorAll('i');
@@ -365,8 +371,8 @@
     if (!G.cfg) return;
     const P = GG.Physics;
     const total = G.cfg.troops;
-    const bLeft = P.count(G.pieces, 'black', 'stone');
-    const wLeft = P.count(G.pieces, 'white', 'stone');
+    const bLeft = G.leftOf('black');
+    const wLeft = G.leftOf('white');
     el.p1Stat.textContent = `${bLeft} / ${total}`;
     el.p2Stat.textContent = `${wLeft} / ${total}`;
     if (G.cfg.rules === 'bio') {

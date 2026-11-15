@@ -18,7 +18,7 @@
       <div class="logo"><span class="dot b"></span><span class="dot w"></span></div>
       <div class="brand-text">
         <h1>围棋弹棋</h1>
-        <p>GO&nbsp;CARROM&nbsp;·&nbsp;<span id="buildTag">v8</span></p>
+        <p>GO&nbsp;CARROM&nbsp;·&nbsp;<span id="buildTag">v9</span></p>
       </div>
     </div>
 
@@ -29,7 +29,7 @@
           <b id="p1Name">黑方</b>
           <small id="p1Stat">3 / 3</small>
           <span class="civ-line" id="p1Civ" title="撞飞平民进度：满 3 个要自选一子下场">
-            <i></i><i></i><i></i><em>平民 <b>0</b><span class="of3">/3</span></em>
+            <i></i><i></i><i></i><em><span class="civ-label">平民</span> <b>0</b><span class="of3">/3</span></em>
           </span>
         </div>
         <span class="badge" id="p1Badge">黑</span>
@@ -41,7 +41,7 @@
           <b id="p2Name">白方</b>
           <small id="p2Stat">3 / 3</small>
           <span class="civ-line" id="p2Civ" title="撞飞平民进度：满 3 个要自选一子下场">
-            <i></i><i></i><i></i><em>平民 <b>0</b><span class="of3">/3</span></em>
+            <i></i><i></i><i></i><em><span class="civ-label">平民</span> <b>0</b><span class="of3">/3</span></em>
           </span>
         </div>
         <span class="badge" id="p2Badge">白</span>
@@ -262,7 +262,8 @@
         <li><b>障碍圆盘。</b>灰色大圆盘是固定不动的无限质量物体，撞上会剧烈反弹，可以利用它做折射球。</li>
         <li><b>别把自己弹下去。</b>己方棋子出界同样会被消灭，大力度要留神。</li>
         <li><b>生化模式（可选）。</b>平民不再中性：<b>任何一方棋子碰到平民，这个平民就归入那一方</b>——你的回合里如果是对手的棋子撞到平民，平民就变成对手的。
-          被收编的平民会带上阵营环；撞飞平民<b>完全没有惩罚</b>，胜负仍只看棋子。</li>
+          <b>万民皆兵</b>：被收编的平民就是那一方的棋子，可以像普通棋子一样点选、弹射，并计入棋子数（状态栏会超过初始数，如 `5/3`）；
+          它的出局同样按敌我判定——被对方撞飞算「击落」，自己出界算「自灭」。撞飞平民<b>没有任何惩罚</b>，一方的棋子（含被收编者）全部出局即告负。</li>
       </ol>
       <p class="tip">小技巧：碰撞会传递动量——用一颗棋子同时撞飞两颗敌方棋子，或借障碍盘改变角度偷袭。</p>
     </div>

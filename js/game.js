@@ -249,6 +249,18 @@
     if (n && G.onSound) G.onSound('hit', { soft: true });
   };
 
+  /** 某方当前的可用棋子数（棋子 + 生化模式下被收编的平民） */
+  G.leftOf = function (side) {
+    let n = 0;
+    for (let i = 0; i < G.pieces.length; i++) {
+      const p = G.pieces[i];
+      if (!p.alive || p.side !== side) continue;
+      if (p.kind === 'stone') n++;
+      else if (p.kind === 'civilian' && G.cfg && G.cfg.rules === 'bio') n++;
+    }
+    return n;
+  };
+
   /** 生化模式下某方控制的平民数 */
   G.civOf = function (side) {
     return P.count(G.pieces, side, 'civilian');
@@ -321,7 +333,11 @@
 
   G.selectable = function (idx) {
     const p = G.pieces[idx];
-    return !!p && p.alive && !p.falling && p.kind === 'stone' && p.side === G.side;
+    if (!p || !p.alive || p.falling) return false;
+    if (p.side !== G.side) return false;
+    if (p.kind === 'stone') return true;
+    // 生化模式：被收编的平民就是己方棋子，可以调动、可以弹射
+    return p.kind === 'civilian' && G.cfg && G.cfg.rules === 'bio';
   };
 
   /* ================= 弹射 ================= */
@@ -455,7 +471,7 @@
     if (G.onLog) G.onLog({ type: 'penalty', text: `${SIDE_CN[side]}自选一颗棋子下场` });
     G.pickDue -= 1;
 
-    if (P.count(G.pieces, side, 'stone') === 0) { G._end(other(side)); return true; }
+    if (G.leftOf(side) === 0) { G._end(other(side)); return true; }
 
     if (G.pickDue > 0) {
       if (G.onTick) G.onTick();
@@ -497,9 +513,11 @@
     const civBefore = st.civ;
     let killed = 0, selfOut = 0, civOut = 0;
 
+    // 生化模式下被收编的平民算"己方棋子"：撞飞它一样按敌我判定
+    const bioMode = G.cfg.rules === 'bio';
     for (const p of G.fx.falls) {
       if (p.kind === 'obstacle') continue;
-      if (p.kind === 'civilian') { civOut++; continue; }
+      if (p.kind === 'civilian' && (!p.side || !bioMode)) { civOut++; continue; }
       if (p.side === opp) killed++;
       else selfOut++;
     }
@@ -511,9 +529,13 @@
     for (const p of G.fx.falls) {
       if (p.kind === 'obstacle') continue;
       const fx = U.clamp(p.x, 40, 960), fy = U.clamp(p.y, 40, 960);
-      if (p.kind === 'civilian') R.addFloat(fx, fy, '平民 −1', '#ef7b6c');
-      else if (p.side === opp) R.addFloat(fx, fy, '击落!', '#7fd0a2');
-      else R.addFloat(fx, fy, '自灭', '#c9b7a2');
+      if (p.kind === 'civilian' && (!p.side || !bioMode)) {
+        R.addFloat(fx, fy, bioMode ? '平民出界' : '平民 −1', '#ef7b6c');
+      } else if (p.side === opp) {
+        R.addFloat(fx, fy, '击落!', '#7fd0a2');
+      } else {
+        R.addFloat(fx, fy, '自灭', '#c9b7a2');
+      }
     }
 
     if (killed && G.onSound) G.onSound('kill', { n: killed });
@@ -548,14 +570,13 @@
     }
     G.fx = newFx();
 
-    // 胜负优先
-    const myLeft = P.count(G.pieces, shooter, 'stone');
-    const opLeft = P.count(G.pieces, opp, 'stone');
+    // 胜负优先（生化模式下被收编的平民同样算作棋子）
+    const myLeft = G.leftOf(shooter);
+    const opLeft = G.leftOf(opp);
     if (opLeft === 0 && myLeft > 0) { G._end(shooter); return; }
     if (myLeft === 0) { G._end(opp); return; }
 
     // 平民惩罚（生化模式完全没有惩罚）
-    const bioMode = G.cfg.rules === 'bio';
     if (!bioMode) {
       if (G.cfg.penalty === 'pick') {
         const every = CFG.ai.civPenaltyEvery || 3;
@@ -591,8 +612,8 @@
       moves: G.moveNo + 1,
       level: G.levelName,
       left: {
-        black: P.count(G.pieces, 'black', 'stone'),
-        white: P.count(G.pieces, 'white', 'stone')
+        black: G.leftOf('black'),
+        white: G.leftOf('white')
       }
     };
     G.aiAim = null;

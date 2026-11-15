@@ -389,7 +389,7 @@
     c.restore();
   }
 
-  function drawCivilian(c, p) {
+  function drawCivilian(c, p, isCurrent) {
     const s = R.w2s(p.x, p.y), r = R.px(p.r);
     const k = skin.civ;
     const t = clock();
@@ -431,6 +431,17 @@
         c.strokeStyle = own === 'black' ? 'rgba(150,190,255,.75)' : 'rgba(255,215,140,.8)';
         c.lineWidth = Math.max(1.5, R.px(2));
         c.stroke();
+      }
+      // 轮到自己行动时：这已经是一颗可以弹射的棋子
+      if (isCurrent) {
+        c.beginPath();
+        c.arc(s.x, s.y, r * (1.26 + Math.sin(t * 3.4) * 0.06), 0, U.TAU);
+        c.strokeStyle = U.rgba(skin.aim, 0.55);
+        c.lineWidth = Math.max(1.4, R.px(2.4));
+        c.setLineDash([R.px(7), R.px(7)]);
+        c.lineDashOffset = -t * 22;
+        c.stroke();
+        c.setLineDash([]);
       }
     }
 
@@ -784,7 +795,7 @@
     for (let i = 0; i < ps.length; i++) {
       const p = ps[i];
       if (!p.alive || p.falling) continue;
-      if (p.kind === 'civilian') drawCivilian(ctx, p);
+      if (p.kind === 'civilian') drawCivilian(ctx, p, st.ringSide && p.side === st.ringSide && !st.picking);
       else if (p.kind === 'stone') drawStone(ctx, p, st.ringSide && p.side === st.ringSide);
     }
     drawAim(ctx, st);
