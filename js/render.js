@@ -63,7 +63,8 @@
   let floats = [];           // 命中/惩罚飘字
   let uiFont = '"PingFang SC","Microsoft YaHei",system-ui,sans-serif';
   let uiScale = 1;
-  const MARGIN = 34;         // 视野在木板外的留白（世界单位）
+  let MARGIN = 34;           // 视野在木板外的留白（世界单位），竖屏会收紧
+  R.setMargin = function (v) { if (v && v !== MARGIN) { MARGIN = v; cacheKey = ''; } };
 
   R.init = function (cv) {
     canvas = cv;

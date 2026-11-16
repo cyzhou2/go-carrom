@@ -45,6 +45,10 @@
   let modalMode = 'setup';
   let aim = null;
   let last = 0;
+  /* 先手轮换：设置不变时，每开一局黑/白交替先手（玩家始终执黑） */
+  let nextSide = 'black';
+  let lastSetupKey = '';
+  let narrowScreen = false;      // 竖屏手机：棋盘留白更小、蓄力距离更短
   let bannerTimer = 0;
   let drag = null;
 
@@ -69,7 +73,9 @@
       localStorage.setItem('gocarrom.prefs', JSON.stringify({
         setup,
         skin: document.documentElement.dataset.skin,
-        size: document.documentElement.dataset.size
+        size: document.documentElement.dataset.size,
+        nextSide,
+        setupKey: lastSetupKey
       }));
     } catch (e) { /* ignore */ }
   }
@@ -89,6 +95,8 @@
       }
       if (p.skin) setSkin(p.skin, false);
       if (p.size) setFontSize(p.size, false);
+      if (p.nextSide === 'black' || p.nextSide === 'white') nextSide = p.nextSide;
+      if (typeof p.setupKey === 'string') lastSetupKey = p.setupKey;
     } catch (e) { /* ignore */ }
   }
 
@@ -621,7 +629,7 @@
     const len = Math.hypot(dx, dy);
     if (len < 0.5) return null;
     if (setup.aim === 'pull') { dx = -dx; dy = -dy; }
-    const maxDrag = G.geom.cell * 3.0;
+    const maxDrag = G.geom.cell * (narrowScreen ? 2.2 : 3.0);
     const power = U.clamp(len / maxDrag, 0, 1);
     return {
       idx: aim.idx,
@@ -786,14 +794,39 @@
   }
 
   /* ---------- 启动 ---------- */
+  /* ---------- 先手轮换 ---------- */
+  function setupFingerprint() {
+    const s = Object.assign({}, setup);
+    delete s.firstSide;
+    return JSON.stringify(s);
+  }
+
+  /** 取出本局先手方；设置没变就与上一局交替 */
+  function takeFirstSide() {
+    const key = setupFingerprint();
+    if (key !== lastSetupKey) { lastSetupKey = key; nextSide = 'black'; }
+    const first = nextSide;
+    nextSide = first === 'black' ? 'white' : 'black';
+    savePrefs();
+    return first;
+  }
+
+  function startBanner() {
+    if (setup.mode === 'ai') {
+      return setup.firstSide === 'black' ? '你执黑先行' : '白方先行 · 你执黑后手';
+    }
+    return (setup.firstSide === 'black' ? '黑方' : '白方') + '先行';
+  }
+
   function restart() {
     if (!G.cfg || E.active) return;
     el.log.innerHTML = '';
     applyLockToSetup();
+    setup.firstSide = takeFirstSide();
     G.start(setup);
     syncNames();
     hideOverlay();
-    showBanner('新的一局');
+    showBanner('新的一局 · ' + startBanner());
   }
 
   function boot() {
@@ -825,10 +858,11 @@
       el.log.innerHTML = '';
       hideOverlay();
       applyLockToSetup();
+      setup.firstSide = takeFirstSide();
       G.start(setup);
       syncNames();
       syncSetupUI();
-      showBanner(setup.mode === 'ai' ? '你执黑先行' : '黑方先行');
+      showBanner(startBanner());
     });
 
     el.btnHelp.addEventListener('click', () => {
@@ -862,9 +896,15 @@
       if (b) setFontSize(b.dataset.size, true);
     });
 
-    new ResizeObserver(() => R.resize()).observe(el.wrap);
-    window.addEventListener('resize', () => R.resize());
-    window.addEventListener('orientationchange', () => setTimeout(() => R.resize(), 220));
+    const syncViewport = () => {
+      narrowScreen = window.matchMedia('(max-width: 680px)').matches;
+      // 竖屏：收紧棋盘外的留白，让棋盘占满屏幕，蓄力时手不容易拖出屏幕
+      R.setMargin(narrowScreen ? 12 : 34);
+    };
+    syncViewport();
+    new ResizeObserver(() => { syncViewport(); R.resize(); }).observe(el.wrap);
+    window.addEventListener('resize', () => { syncViewport(); R.resize(); });
+    window.addEventListener('orientationchange', () => setTimeout(() => { syncViewport(); R.resize(); }, 220));
     document.addEventListener('keydown', e => {
       const typing = document.activeElement && document.activeElement.tagName === 'INPUT';
       if (e.key === 'Escape') {

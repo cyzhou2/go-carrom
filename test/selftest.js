@@ -341,10 +341,16 @@ async function main() {
     // 被感染的子力也会继续传播（子力自身就是传染源）
     G.start({ mode: 'pvp', board: 9, troops: 3, civ: 6, obs: 0, rules: 'bio' });
     {
+      // 先把其它子力挪到角落，避免随机摆盘干扰这条"传播链"
+      G.pieces.forEach((p, i) => {
+        if (p.kind === 'obstacle') return;
+        p.x = 60 + (i % 6) * 22; p.y = 60 + Math.floor(i / 6) * 22;
+        p.vx = p.vy = p.w = 0;
+      });
       const civs = G.pieces.filter(p => p.kind === 'civilian');
       const src = civs[0], dst = civs[1];
       src.side = 'black';
-      src.x = 500; src.y = 500; src.vx = 70; src.vy = 0; src.w = 0;
+      src.x = 500; src.y = 500; src.vx = 120; src.vy = 0; src.w = 0;
       dst.x = 500 + src.r + dst.r - 1; dst.y = 500; dst.vx = dst.vy = 0;
       const fx = { hits: [], falls: [], converts: [] };
       P.step(G.pieces, G.geom, P.FIXED_DT, fx);

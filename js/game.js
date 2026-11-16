@@ -301,7 +301,8 @@
     G.levelName = level ? (level.name || '自定义关卡') : null;
     G.stats = { black: { kills: 0, lost: 0, civ: 0, gained: 0 }, white: { kills: 0, lost: 0, civ: 0, gained: 0 } };
     G.moveNo = 0;
-    G.side = 'black';
+    G.side = G.cfg.firstSide === 'white' ? 'white' : 'black';
+    G.firstSide = G.side;
     G.result = null;
     G.aiAim = null;
     G.acc = 0;
